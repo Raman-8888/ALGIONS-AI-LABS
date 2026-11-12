@@ -18,6 +18,8 @@ import { holdsRouter } from './modules/holds/holds.routes.js';
 import { bookingsRouter } from './modules/bookings/bookings.routes.js';
 import { paymentsRouter } from './modules/payments/payments.routes.js';
 import { ticketsRouter } from './modules/tickets/tickets.routes.js';
+import { reportsRouter } from './modules/reports/reports.routes.js';
+import { auditRouter } from './modules/audit/audit.routes.js';
 
 export const app: Express = express();
 
@@ -80,6 +82,8 @@ app.use(`${config.apiPrefix}/holds`, holdsRouter);
 app.use(`${config.apiPrefix}/bookings`, bookingsRouter);
 app.use(`${config.apiPrefix}/payments`, paymentsRouter);
 app.use(`${config.apiPrefix}/tickets`, ticketsRouter);
+app.use(`${config.apiPrefix}/reports`, reportsRouter);
+app.use(`${config.apiPrefix}/audit`, auditRouter);
 
 // 5. Global 404 Handler
 app.use((req: Request, res: Response) => {
