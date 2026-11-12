@@ -83,24 +83,32 @@ export const api = {
 
   // Movies & Genres
   movies: {
-    list: (params?: { search?: string; genre?: string }) => {
+    list: async (params?: { search?: string; genre?: string }): Promise<Movie[]> => {
       const qs = new URLSearchParams();
-      if (params?.search) qs.append('search', params.search);
+      if (params?.search) qs.append('q', params.search);
       if (params?.genre) qs.append('genre', params.genre);
       const query = qs.toString() ? `?${qs.toString()}` : '';
-      return request<Movie[]>(`/api/v1/movies${query}`);
+      const res = await request<any>(`/api/v1/movies${query}`);
+      return Array.isArray(res) ? res : (res?.movies || []);
     },
-    get: (id: string) => request<Movie>(`/api/v1/movies/${id}`),
-    create: (data: Partial<Movie>) =>
-      request<Movie>('/api/v1/movies', {
+    get: async (id: string): Promise<Movie> => {
+      const res = await request<any>(`/api/v1/movies/${id}`);
+      return res?.movie || res;
+    },
+    create: async (data: Partial<Movie>): Promise<Movie> => {
+      const res = await request<any>('/api/v1/movies', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
-    update: (id: string, data: Partial<Movie>) =>
-      request<Movie>(`/api/v1/movies/${id}`, {
+      });
+      return res?.movie || res;
+    },
+    update: async (id: string, data: Partial<Movie>): Promise<Movie> => {
+      const res = await request<any>(`/api/v1/movies/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
-      }),
+      });
+      return res?.movie || res;
+    },
     delete: (id: string) =>
       request<{ message: string }>(`/api/v1/movies/${id}`, {
         method: 'DELETE',
@@ -108,30 +116,41 @@ export const api = {
   },
 
   genres: {
-    list: () => request<Genre[]>('/api/v1/genres'),
-    create: (data: { name: string; slug?: string }) =>
-      request<Genre>('/api/v1/genres', {
+    list: async (): Promise<Genre[]> => {
+      const res = await request<any>('/api/v1/genres');
+      return Array.isArray(res) ? res : (res?.genres || []);
+    },
+    create: async (data: { name: string; slug?: string }): Promise<Genre> => {
+      const res = await request<any>('/api/v1/genres', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
+      });
+      return res?.genre || res;
+    },
   },
 
   // Theatres & Screens
   theatres: {
-    list: () => request<Theatre[]>('/api/v1/theatres'),
-    create: (data: Partial<Theatre>) =>
-      request<Theatre>('/api/v1/theatres', {
+    list: async (): Promise<Theatre[]> => {
+      const res = await request<any>('/api/v1/theatres');
+      return Array.isArray(res) ? res : (res?.theatres || []);
+    },
+    create: async (data: Partial<Theatre>): Promise<Theatre> => {
+      const res = await request<any>('/api/v1/theatres', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
+      });
+      return res?.theatre || res;
+    },
   },
 
   screens: {
-    list: (theatreId?: string) => {
+    list: async (theatreId?: string): Promise<Screen[]> => {
       const q = theatreId ? `?theatreId=${theatreId}` : '';
-      return request<Screen[]>(`/api/v1/screens${q}`);
+      const res = await request<any>(`/api/v1/screens${q}`);
+      return Array.isArray(res) ? res : (res?.screens || []);
     },
-    create: (data: {
+    create: async (data: {
       theatre: string;
       name: string;
       layout: {
@@ -140,43 +159,52 @@ export const api = {
         aisles: number[];
         rowCategoryMap: Record<string, string>;
       };
-    }) =>
-      request<Screen>('/api/v1/screens', {
+    }): Promise<Screen> => {
+      const res = await request<any>('/api/v1/screens', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
+      });
+      return res?.screen || res;
+    },
   },
 
   // Shows
   shows: {
-    list: (params?: { theatreId?: string; movieId?: string; from?: string; to?: string }) => {
+    list: async (params?: { theatreId?: string; movieId?: string; from?: string; to?: string }): Promise<Show[]> => {
       const qs = new URLSearchParams();
       if (params?.theatreId) qs.append('theatreId', params.theatreId);
       if (params?.movieId) qs.append('movieId', params.movieId);
       if (params?.from) qs.append('from', params.from);
       if (params?.to) qs.append('to', params.to);
       const query = qs.toString() ? `?${qs.toString()}` : '';
-      return request<Show[]>(`/api/v1/shows${query}`);
+      const res = await request<any>(`/api/v1/shows${query}`);
+      return Array.isArray(res) ? res : (res?.shows || []);
     },
-    getByMovie: (movieId: string) =>
-      request<Array<{ theatre: Theatre; shows: Show[] }>>(`/api/v1/shows/movie/${movieId}`),
-    create: (data: {
+    getByMovie: async (movieId: string): Promise<Array<{ theatre: Theatre; shows: Show[] }>> => {
+      const res = await request<any>(`/api/v1/shows/movie/${movieId}`);
+      return Array.isArray(res) ? res : (res?.theatres || []);
+    },
+    create: async (data: {
       movieId: string;
       theatreId: string;
       screenId: string;
       startsAt: string;
       priceByCategory: Record<string, number>;
       cleaningBufferMinutes?: number;
-    }) =>
-      request<Show>('/api/v1/shows', {
+    }): Promise<Show> => {
+      const res = await request<any>('/api/v1/shows', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
-    cancel: (id: string, reason?: string) =>
-      request<Show>(`/api/v1/shows/${id}`, {
+      });
+      return res?.show || res;
+    },
+    cancel: async (id: string, reason?: string): Promise<Show> => {
+      const res = await request<any>(`/api/v1/shows/${id}`, {
         method: 'DELETE',
         body: JSON.stringify({ reason }),
-      }),
+      });
+      return res?.show || res;
+    },
   },
 
   // Seats & Holds

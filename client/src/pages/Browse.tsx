@@ -29,7 +29,7 @@ export const Browse: React.FC = () => {
     fetchData();
   }, []);
 
-  const filteredMovies = movies.filter((m) => {
+  const filteredMovies = (movies || []).filter((m) => {
     const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase());
     const matchesGenre = !selectedGenre || m.genres.some((g) => {
       const gName = typeof g === 'string' ? g : g.name;
