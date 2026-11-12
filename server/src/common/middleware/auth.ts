@@ -26,19 +26,19 @@ interface JwtPayload {
   tokenVersion: number;
 }
 
-export async function requireAuth(req: Request, _res: Response, next: NextFunction) {
-  let token: string | undefined;
-
-  // 1. Extract from httpOnly Cookie first
+function extractToken(req: Request): string | undefined {
   if (req.cookies && req.cookies[config.jwt.cookieName]) {
-    token = req.cookies[config.jwt.cookieName];
+    return req.cookies[config.jwt.cookieName];
   }
-
-  // 2. Fallback to Authorization Header (Bearer token)
   const authHeader = req.headers.authorization;
-  if (!token && authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
   }
+  return undefined;
+}
+
+export async function requireAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = extractToken(req);
 
   if (!token) {
     return next(AppError.unauthorized('Authentication required: no token provided'));
@@ -47,7 +47,6 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   try {
     const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
 
-    // Verify user still exists, is active, and token has not been revoked
     const user = await User.findById(decoded.sub).lean();
     if (!user) {
       return next(AppError.unauthorized('User associated with this token no longer exists'));
@@ -80,3 +79,26 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   }
 }
 
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = extractToken(req);
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+    const user = await User.findById(decoded.sub).lean();
+    if (user && user.isActive && user.tokenVersion === decoded.tokenVersion) {
+      req.user = {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      };
+    }
+  } catch {
+    // Silently ignore invalid tokens in optionalAuth
+  }
+
+  next();
+}

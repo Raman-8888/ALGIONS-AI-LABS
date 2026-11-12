@@ -13,6 +13,7 @@ import { moviesRouter } from './modules/movies/movies.routes.js';
 import { theatresRouter } from './modules/theatres/theatres.routes.js';
 import { screensRouter } from './modules/screens/screens.routes.js';
 import { showsRouter } from './modules/shows/shows.routes.js';
+import { seatsRouter } from './modules/seats/seats.routes.js';
 
 export const app: Express = express();
 
@@ -70,6 +71,7 @@ app.use(`${config.apiPrefix}/movies`, moviesRouter);
 app.use(`${config.apiPrefix}/theatres`, theatresRouter);
 app.use(`${config.apiPrefix}/screens`, screensRouter);
 app.use(`${config.apiPrefix}/shows`, showsRouter);
+app.use(`${config.apiPrefix}/seats`, seatsRouter);
 
 // 5. Global 404 Handler
 app.use((req: Request, res: Response) => {

@@ -20,6 +20,17 @@ export class ShowsController {
     }
   }
 
+  static async getByMovie(req: Request, res: Response, next: NextFunction) {
+    try {
+      const movieId = req.params.movieId;
+      const date = req.query.date as string | undefined;
+      const grouped = await ShowsService.getShowsByMovie(movieId, date);
+      res.status(200).json({ data: { theatres: grouped } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
       const show = await ShowsService.createShow(req.body, req.user!.id, req.id);

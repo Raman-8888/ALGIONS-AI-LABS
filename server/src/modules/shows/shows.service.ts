@@ -41,9 +41,68 @@ export class ShowsService {
 
     return Show.find(filter)
       .populate('movie', 'title durationMinutes posterUrl languages genres')
-      .populate('screen', 'name theatre totalSeats')
+      .populate({
+        path: 'screen',
+        populate: { path: 'theatre', select: 'name city timezone' },
+      })
       .sort({ startsAt: 1 })
       .lean();
+  }
+
+  static async getShowsByMovie(movieId: string, date?: string) {
+    const filter: Record<string, any> = {
+      movie: movieId,
+      status: 'SCHEDULED',
+      startsAt: { $gte: new Date() }, // Only upcoming shows
+    };
+
+    if (date) {
+      const startOfDay = new Date(`${date}T00:00:00.000Z`);
+      const endOfDay = new Date(`${date}T23:59:59.999Z`);
+      filter.startsAt = { $gte: startOfDay, $lte: endOfDay };
+    }
+
+    const shows = await Show.find(filter)
+      .populate({
+        path: 'screen',
+        populate: { path: 'theatre', select: 'name city timezone address' },
+      })
+      .sort({ startsAt: 1 })
+      .lean();
+
+    // Group shows by Theatre
+    const theatreMap = new Map<string, any>();
+    for (const sh of shows) {
+      const screen = sh.screen as any;
+      const theatre = screen?.theatre;
+      if (!theatre) continue;
+
+      const theatreId = theatre._id.toString();
+      if (!theatreMap.has(theatreId)) {
+        theatreMap.set(theatreId, {
+          theatre: {
+            id: theatre._id,
+            name: theatre.name,
+            city: theatre.city,
+            address: theatre.address,
+            timezone: theatre.timezone,
+          },
+          shows: [],
+        });
+      }
+
+      theatreMap.get(theatreId).shows.push({
+        id: sh._id,
+        screenName: screen.name,
+        startsAt: sh.startsAt,
+        endsAt: sh.endsAt,
+        language: sh.language,
+        format: sh.format,
+        priceByCategory: sh.priceByCategory,
+      });
+    }
+
+    return Array.from(theatreMap.values());
   }
 
   static async getShowById(id: string) {
