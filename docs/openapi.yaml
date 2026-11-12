@@ -1,0 +1,443 @@
+openapi: 3.0.3
+info:
+  title: Algions Cinema Hall Ticket Booking Engine API
+  version: 1.0.0
+  description: >
+    Enterprise-grade Cinema Booking API featuring MongoDB multi-document ACID transactions,
+    atomic seat holds, schedule conflict serialization via Screen.scheduleVersion locking,
+    dual-expiry evaluation, two-phase payment isolation, and HMAC-signed digital tickets.
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local Development Server
+
+paths:
+  # ----------------------------------------
+  # AUTH
+  # ----------------------------------------
+  /auth/register:
+    post:
+      summary: Register a new customer
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        201:
+          description: Customer registered successfully
+        409:
+          description: Email already in use
+
+  /auth/login:
+    post:
+      summary: User login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        200:
+          description: Logged in successfully with httpOnly JWT cookie
+        401:
+          description: Invalid email or password
+
+  /auth/logout:
+    post:
+      summary: User logout
+      tags: [Auth]
+      responses:
+        200:
+          description: Cookie cleared
+
+  /auth/me:
+    get:
+      summary: Get current authenticated user profile
+      tags: [Auth]
+      responses:
+        200:
+          description: User profile
+        401:
+          description: Unauthorized
+
+  # ----------------------------------------
+  # MOVIES & GENRES
+  # ----------------------------------------
+  /movies:
+    get:
+      summary: Browse active movies
+      tags: [Movies]
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: genre
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of active movies
+    post:
+      summary: Create movie (Admin only)
+      tags: [Movies]
+      responses:
+        201:
+          description: Movie created
+
+  /movies/{id}:
+    get:
+      summary: Get movie details
+      tags: [Movies]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Movie details
+        404:
+          description: Movie not found
+    delete:
+      summary: Soft-delete movie with active shows guard (Admin only)
+      tags: [Movies]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Movie deactivated
+        409:
+          description: Cannot delete movie with active or upcoming scheduled shows
+
+  /genres:
+    get:
+      summary: List all genres
+      tags: [Genres]
+      responses:
+        200:
+          description: List of genres
+    post:
+      summary: Create genre (Admin only)
+      tags: [Genres]
+      responses:
+        201:
+          description: Genre created
+
+  # ----------------------------------------
+  # THEATRES & SCREENS
+  # ----------------------------------------
+  /theatres:
+    get:
+      summary: List all theatres
+      tags: [Theatres]
+      responses:
+        200:
+          description: List of theatres
+    post:
+      summary: Add theatre (Admin only)
+      tags: [Theatres]
+      responses:
+        201:
+          description: Theatre created
+
+  /screens:
+    get:
+      summary: List screens by theatre
+      tags: [Screens]
+      parameters:
+        - in: query
+          name: theatreId
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of screens
+    post:
+      summary: Configure screen layout (Admin only)
+      tags: [Screens]
+      responses:
+        201:
+          description: Screen layout configured
+
+  # ----------------------------------------
+  # SHOWS
+  # ----------------------------------------
+  /shows:
+    get:
+      summary: List upcoming shows
+      tags: [Shows]
+      parameters:
+        - in: query
+          name: theatreId
+          schema:
+            type: string
+        - in: query
+          name: movieId
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of scheduled shows
+    post:
+      summary: Schedule show with Screen.scheduleVersion serialization (Admin only)
+      tags: [Shows]
+      responses:
+        201:
+          description: Show scheduled and ShowSeats generated
+        409:
+          description: Overlapping show detected on screen or scheduleVersion conflict
+
+  /shows/movie/{movieId}:
+    get:
+      summary: Get upcoming shows grouped by theatre
+      tags: [Shows]
+      parameters:
+        - in: path
+          name: movieId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Shows grouped by theatre
+
+  /shows/{id}:
+    delete:
+      summary: Cancel show with transactional cascade to bookings and tickets (Admin only)
+      tags: [Shows]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Show cancelled, all bookings refunded, tickets invalidated
+
+  # ----------------------------------------
+  # SEATS & HOLDS
+  # ----------------------------------------
+  /seats/show/{showId}:
+    get:
+      summary: Get lean live seat map with dual-expiry lazy evaluation
+      tags: [Seats]
+      parameters:
+        - in: path
+          name: showId
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Seat map with layout and status
+
+  /holds:
+    post:
+      summary: Atomically hold seats with 8-seat anti-hoarding cap (Requires Idempotency-Key)
+      tags: [Holds]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Seats held successfully for 5 minutes
+        409:
+          description: One or more requested seats are already held or booked
+        422:
+          description: Exceeds 8 seats anti-hoarding limit
+    delete:
+      summary: Explicitly release seats held by caller
+      tags: [Holds]
+      responses:
+        200:
+          description: Holds released back to AVAILABLE
+
+  # ----------------------------------------
+  # BOOKINGS & PAYMENTS
+  # ----------------------------------------
+  /bookings/initiate:
+    post:
+      summary: Initiate booking (Step 1 of two-phase commit, creates PENDING_PAYMENT)
+      tags: [Bookings]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: Booking initiated with price snapshot and hold extension
+        409:
+          description: Holds expired or not owned by user
+
+  /payments/simulate:
+    post:
+      summary: Simulate payment gateway execution outside DB transaction
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bookingId, simulationMode]
+              properties:
+                bookingId:
+                  type: string
+                simulationMode:
+                  type: string
+                  enum: [MOCK_SUCCESS, MOCK_FAIL, MOCK_TIMEOUT]
+      responses:
+        200:
+          description: Payment simulated
+
+  /bookings/{id}/confirm:
+    post:
+      summary: Confirm booking inside ACID transaction (Step 3, marks seats BOOKED, issues signed tickets)
+      tags: [Bookings]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Booking confirmed and tickets issued
+        409:
+          description: >
+            Hold expired during payment. Fallback rule executed: booking marked EXPIRED,
+            payment marked REFUND_PENDING with 100% refund.
+
+  /bookings/{id}/cancel:
+    post:
+      summary: Customer booking cancellation (> 60m cutoff enforced)
+      tags: [Bookings]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Booking cancelled, seats released, tickets invalidated, 100% refund initiated
+        422:
+          description: Cancellation window has closed (< 60 minutes before showtime)
+
+  /bookings/my-bookings:
+    get:
+      summary: Retrieve authenticated customer's booking history
+      tags: [Bookings]
+      responses:
+        200:
+          description: List of customer bookings with digital tickets
+
+  # ----------------------------------------
+  # TICKETS
+  # ----------------------------------------
+  /tickets/validate:
+    post:
+      summary: Staff atomic single-use ticket admission scanner
+      tags: [Tickets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [showId]
+              properties:
+                qrToken:
+                  type: string
+                ticketReference:
+                  type: string
+                showId:
+                  type: string
+      responses:
+        200:
+          description: Admission granted, ticket marked USED
+        409:
+          description: Double scan prevented! Ticket was already validated
+        422:
+          description: Wrong show, cancelled booking, or outside 30m door timing window
+
+  # ----------------------------------------
+  # REPORTS & AUDIT
+  # ----------------------------------------
+  /reports/occupancy:
+    get:
+      summary: Get live show occupancy report (Occupancy = Confirmed - Cancelled)
+      tags: [Reports]
+      responses:
+        200:
+          description: Occupancy report
+
+  /reports/sales:
+    get:
+      summary: Get financial sales report (Gross, Refunds, Net Revenue)
+      tags: [Reports]
+      responses:
+        200:
+          description: Financial report
+
+  /audit:
+    get:
+      summary: Paginated append-only immutable audit trail (Admin only)
+      tags: [Audit]
+      parameters:
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: skip
+          schema:
+            type: integer
+            default: 0
+      responses:
+        200:
+          description: Paginated audit trail

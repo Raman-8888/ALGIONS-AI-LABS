@@ -20,6 +20,10 @@ import { paymentsRouter } from './modules/payments/payments.routes.js';
 import { ticketsRouter } from './modules/tickets/tickets.routes.js';
 import { reportsRouter } from './modules/reports/reports.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+import fs from 'fs';
 
 export const app: Express = express();
 
@@ -59,6 +63,20 @@ app.get('/ready', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Swagger API Documentation
+try {
+  const rootOpenApiPath = path.resolve(process.cwd(), 'docs/openapi.yaml');
+  const parentOpenApiPath = path.resolve(process.cwd(), '../docs/openapi.yaml');
+  const openApiPath = fs.existsSync(rootOpenApiPath) ? rootOpenApiPath : parentOpenApiPath;
+  if (fs.existsSync(openApiPath)) {
+    const swaggerDoc = YAML.load(openApiPath);
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+  }
+} catch (err) {
+  console.warn('[Swagger] Failed to initialize Swagger UI:', err);
+}
+
 
 // 4. API Routes
 app.get(config.apiPrefix, (req: Request, res: Response) => {
