@@ -7,6 +7,7 @@ import {
   initiateBookingSchema,
   checkoutSchema,
   confirmBookingSchema,
+  cancelBookingSchema,
 } from './bookings.validation.js';
 
 export const bookingsRouter: Router = Router();
@@ -34,6 +35,14 @@ bookingsRouter.post(
   idempotencyGuard({ required: true }),
   validateRequest({ body: confirmBookingSchema }),
   BookingsController.confirm,
+);
+
+// Customer booking cancellation (Requires Idempotency-Key)
+bookingsRouter.post(
+  '/:id/cancel',
+  idempotencyGuard({ required: true }),
+  validateRequest({ body: cancelBookingSchema }),
+  BookingsController.cancel,
 );
 
 // Customer booking history

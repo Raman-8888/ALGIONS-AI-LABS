@@ -40,6 +40,27 @@ export class BookingsController {
     }
   }
 
+  static async cancel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const isAdmin = req.user?.role === 'ADMIN';
+      const result = await BookingsService.cancelBooking(
+        req.user!.id,
+        id,
+        reason,
+        isAdmin,
+        req.id,
+      );
+      res.status(200).json({
+        message: 'Booking cancelled successfully and refund initiated',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getMyBookings(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string, 10) || 1;

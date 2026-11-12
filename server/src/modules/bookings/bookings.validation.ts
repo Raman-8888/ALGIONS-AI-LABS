@@ -23,7 +23,12 @@ export const confirmBookingSchema = z.object({
   paymentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Valid Payment ID is required'),
 });
 
+export const cancelBookingSchema = z.object({
+  reason: z.string().trim().max(200).optional().default('CUSTOMER_REQUESTED'),
+});
+
 export type InitiateBookingInput = z.infer<typeof initiateBookingSchema>;
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type ConfirmBookingInput = z.infer<typeof confirmBookingSchema>;
+export type CancelBookingInput = z.infer<typeof cancelBookingSchema>;
 

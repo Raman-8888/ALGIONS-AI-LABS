@@ -5,6 +5,7 @@ import { Show } from '../../db/models/Show.js';
 import { Payment } from '../../db/models/Payment.js';
 import { Ticket } from '../../db/models/Ticket.js';
 import { AppError } from '../../common/errors/AppError.js';
+import { config } from '../../common/config/index.js';
 import { generateReference, generateQrToken } from '../../common/utils/index.js';
 import { withTransaction } from '../../common/utils/transaction.js';
 import { logAudit } from '../../common/audit/auditLogger.js';
@@ -337,6 +338,124 @@ export class BookingsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  static async cancelBooking(
+    userId: string,
+    bookingId: string,
+    reason = 'CUSTOMER_REQUESTED',
+    isAdmin = false,
+    requestId = 'system',
+  ) {
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      throw AppError.notFound(`Booking with id ${bookingId} not found`);
+    }
+
+    if (!isAdmin && booking.user.toString() !== userId) {
+      throw AppError.forbidden('You do not have permission to cancel this booking');
+    }
+
+    if (booking.status !== 'CONFIRMED') {
+      throw AppError.badRequest(
+        `Only CONFIRMED bookings can be cancelled. Current status is ${booking.status}.`,
+      );
+    }
+
+    const show = await Show.findById(booking.show).lean();
+    if (!show) {
+      throw AppError.notFound('Show associated with this booking not found');
+    }
+
+    // Cutoff Window Check: must be at least CANCELLATION_CUTOFF_MINUTES before showtime
+    const cutoffMinutes = config.businessRules.cancellationCutoffMinutes; // default: 60 mins
+    const cutoffThresholdMs = cutoffMinutes * 60 * 1000;
+    const timeUntilShowMs = new Date(show.startsAt).getTime() - Date.now();
+
+    if (!isAdmin && timeUntilShowMs < cutoffThresholdMs) {
+      throw AppError.unprocessable(
+        `Cancellation window has closed. Bookings can only be cancelled at least ${cutoffMinutes} minutes prior to showtime.`,
+        {
+          cutoffMinutes,
+          timeRemainingMinutes: Math.max(0, Math.floor(timeUntilShowMs / 60000)),
+        },
+      );
+    }
+
+    // Compute refund amount based on config percentage
+    const refundPercentage = config.businessRules.refundPercentage; // 100%
+    const refundAmountInPaise = Math.round(
+      (booking.totalAmountInPaise * refundPercentage) / 100,
+    );
+
+    return withTransaction(async (session) => {
+      const now = new Date();
+
+      // 1. Update Booking state
+      booking.status = 'CANCELLED';
+      booking.cancelledAt = now;
+      booking.cancelledBy = new mongoose.Types.ObjectId(userId);
+      booking.cancellationReason = reason;
+      await booking.save({ session });
+
+      // 2. Release ShowSeats back to AVAILABLE
+      await ShowSeat.updateMany(
+        { _id: { $in: booking.seats } },
+        {
+          $set: { status: 'AVAILABLE', booking: null },
+          $unset: { heldBy: '', holdExpiresAt: '' },
+        },
+        { session },
+      );
+
+      // 3. Mark Tickets as CANCELLED
+      await Ticket.updateMany(
+        { booking: booking._id },
+        { $set: { status: 'CANCELLED' } },
+        { session },
+      );
+
+      // 4. Update Payment to REFUND_PENDING
+      await Payment.updateMany(
+        { booking: booking._id, status: 'SUCCESS' },
+        {
+          $set: {
+            refundStatus: 'REFUND_PENDING',
+            refundAmountInPaise,
+            refundedAt: now,
+          },
+        },
+        { session },
+      );
+
+      // 5. Audit Log
+      await logAudit({
+        actorType: 'USER',
+        actorId: userId,
+        action: 'BOOKING_CANCEL',
+        entity: 'Booking',
+        entityId: booking._id.toString(),
+        details: {
+          bookingReference: booking.reference,
+          refundAmountInPaise,
+          refundPercentage,
+          reason,
+        },
+        requestId,
+        session,
+      });
+
+      return {
+        bookingId: booking._id.toString(),
+        reference: booking.reference,
+        status: booking.status,
+        refund: {
+          refundStatus: 'REFUND_PENDING',
+          refundAmountInPaise,
+          refundPercentage,
+        },
+      };
+    });
   }
 
   static async getBookingById(userId: string, bookingId: string) {
