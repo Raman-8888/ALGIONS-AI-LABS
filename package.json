@@ -7,10 +7,13 @@
     "server",
     "client"
   ],
+  "devDependencies": {
+    "concurrently": "^9.2.5"
+  },
   "scripts": {
     "dev:server": "npm --workspace=server run dev",
     "dev:client": "npm --workspace=client run dev",
-    "dev": "npm run dev:server",
+    "dev": "concurrently -n \"API,CLIENT\" -c \"blue,green\" \"npm run dev:server\" \"npm run dev:client\"",
     "build:server": "npm --workspace=server run build",
     "build:client": "npm --workspace=client run build",
     "build": "npm run build:server && npm run build:client",
@@ -34,4 +37,3 @@
   "author": "Algions Assessment Candidate",
   "license": "ISC"
 }
-
