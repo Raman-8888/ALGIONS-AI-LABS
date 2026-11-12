@@ -165,7 +165,7 @@ export const MovieDetails: React.FC = () => {
           <div className="space-y-6">
             {theatreShows.map(({ theatre, shows }) => (
               <div
-                key={theatre._id}
+                key={theatre._id || (theatre as any).id}
                 className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md"
               >
                 {/* Theatre Header */}
@@ -186,15 +186,17 @@ export const MovieDetails: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {shows.map((show) => {
                     const lowest = getLowestPrice(show.priceByCategory);
+                    const showId = show._id || (show as any).id;
+                    const screenName = show.screen?.name || (show as any).screenName || 'Auditorium';
                     return (
                       <Link
-                        key={show._id}
-                        to={`/shows/${show._id}/seats`}
+                        key={showId}
+                        to={`/shows/${showId}/seats`}
                         className="group bg-slate-950 border border-slate-800 hover:border-indigo-500 rounded-xl p-4 transition duration-150 flex flex-col justify-between"
                       >
                         <div>
                           <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                            <span>{show.screen.name}</span>
+                            <span>{screenName}</span>
                             <span className="text-slate-500">{formatShowDate(show.startsAt)}</span>
                           </div>
 

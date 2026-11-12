@@ -160,3 +160,4 @@ npm run test:client
 - **[OpenAPI 3.0 Specification](docs/openapi.yaml)**: OpenAPI spec served live at `/api/docs`.
 - **[Known Limitations](KNOWN_LIMITATIONS.md)**: Explicit record of intentional scope boundaries and mitigations.
 - **[AI Usage & Attribution](AI_USAGE.md)**: Log of AI assistance and human review across all phases.
+

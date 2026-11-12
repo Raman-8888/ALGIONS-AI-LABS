@@ -209,7 +209,48 @@ export const api = {
 
   // Seats & Holds
   seats: {
-    getSeatMap: (showId: string) => request<SeatMapResponse>(`/api/v1/seats/show/${showId}`),
+    getSeatMap: async (showId: string): Promise<SeatMapResponse> => {
+      const res = await request<any>(`/api/v1/seats/show/${showId}`);
+      if (res?.show) {
+        const theatre = res.show.screen?.theatre;
+        const layout = res.show.screen?.seatLayout || res.show.screen?.layout || { rows: 5, columns: 8, aisles: [] };
+        return {
+          showId: res.show.id || res.show._id,
+          movieTitle: res.show.movie?.title || 'Movie',
+          theatreName: theatre?.name || 'Cinema Multiplex',
+          screenName: res.show.screen?.name || 'Screen 1',
+          startsAt: res.show.startsAt,
+          endsAt: res.show.endsAt,
+          priceByCategory: res.show.priceByCategory || {},
+          layout: {
+            rows: layout.rows,
+            columns: layout.columns,
+            aisles: layout.aisles || [],
+            rowCategoryMap: layout.rowCategoryMap || {},
+            gaps: layout.gapSeats || layout.gaps || [],
+          },
+          seats: (res.seats || []).map((s: any) => ({
+            _id: s.id || s._id,
+            show: res.show.id || res.show._id,
+            seatLabel: s.seatLabel,
+            row: s.row,
+            column: s.number !== undefined ? s.number : s.column,
+            category: s.category,
+            price: s.priceInPaise !== undefined ? s.priceInPaise : s.price,
+            status: s.status,
+            isMine: s.isMine,
+            expiresInSeconds: s.holdSecondsRemaining !== undefined ? s.holdSecondsRemaining : s.expiresInSeconds,
+          })),
+          summary: {
+            total: res.summary?.totalSeats || res.summary?.total || 0,
+            available: res.summary?.availableSeats || res.summary?.available || 0,
+            held: res.summary?.heldSeats || res.summary?.held || 0,
+            booked: res.summary?.bookedSeats || res.summary?.booked || 0,
+          },
+        };
+      }
+      return res as SeatMapResponse;
+    },
   },
 
   holds: {
@@ -286,7 +327,38 @@ export const api = {
         body: JSON.stringify({ reason }),
       }),
 
-    getMyBookings: () => request<Booking[]>('/api/v1/bookings/my-bookings'),
+    getMyBookings: async (): Promise<Booking[]> => {
+      const res = await request<any>('/api/v1/bookings/my-bookings');
+      const list = Array.isArray(res) ? res : (res?.bookings || []);
+      return list.map((b: any) => ({
+        _id: b._id || b.id,
+        bookingReference: b.reference || b.bookingReference,
+        user: b.user,
+        show: b.show,
+        seats: (b.seatSnapshots || b.seats || []).map((s: any) => ({
+          seatId: s.seatId || s._id || s,
+          seatLabel: s.seatLabel || (typeof s === 'string' ? s : 'Seat'),
+          category: s.category || 'STANDARD',
+          pricePaise: s.priceInPaise !== undefined ? s.priceInPaise : (s.pricePaise || 0),
+        })),
+        totalAmount: b.totalAmountInPaise !== undefined ? b.totalAmountInPaise : (b.totalAmount || 0),
+        currency: b.currency || 'INR',
+        status: b.status,
+        createdAt: b.createdAt,
+        cancelledAt: b.cancelledAt,
+        cancellationReason: b.cancellationReason,
+        tickets: (b.tickets || []).map((t: any) => ({
+          _id: t._id || t.id,
+          ticketReference: t.reference || t.ticketReference,
+          seatLabel: t.showSeat?.seatLabel || t.seatLabel || 'Seat',
+          category: t.showSeat?.category || t.category || 'STANDARD',
+          priceSnapshot: t.priceSnapshot || 0,
+          qrPayloadToken: t.qrToken || t.qrPayloadToken,
+          status: t.status,
+          validatedAt: t.validatedAt,
+        })),
+      }));
+    },
   },
 
   // Tickets
@@ -309,28 +381,30 @@ export const api = {
 
   // Reports
   reports: {
-    getOccupancy: (params?: { showId?: string; theatreId?: string; from?: string; to?: string }) => {
+    getOccupancy: async (params?: { showId?: string; theatreId?: string; from?: string; to?: string }): Promise<OccupancyReport[]> => {
       const qs = new URLSearchParams();
       if (params?.showId) qs.append('showId', params.showId);
       if (params?.theatreId) qs.append('theatreId', params.theatreId);
       if (params?.from) qs.append('from', params.from);
       if (params?.to) qs.append('to', params.to);
       const query = qs.toString() ? `?${qs.toString()}` : '';
-      return request<OccupancyReport[]>(`/api/v1/reports/occupancy${query}`);
+      const res = await request<any>(`/api/v1/reports/occupancy${query}`);
+      return Array.isArray(res) ? res : (res?.occupancy || res?.data || []);
     },
-    getSales: (params?: { from?: string; to?: string; theatreId?: string }) => {
+    getSales: async (params?: { from?: string; to?: string; theatreId?: string }): Promise<SalesReport> => {
       const qs = new URLSearchParams();
       if (params?.from) qs.append('from', params.from);
       if (params?.to) qs.append('to', params.to);
       if (params?.theatreId) qs.append('theatreId', params.theatreId);
       const query = qs.toString() ? `?${qs.toString()}` : '';
-      return request<SalesReport>(`/api/v1/reports/sales${query}`);
+      const res = await request<any>(`/api/v1/reports/sales${query}`);
+      return res?.sales || res?.data || res;
     },
   },
 
   // Audit
   audit: {
-    list: (params?: {
+    list: async (params?: {
       action?: string;
       actorId?: string;
       targetType?: string;
@@ -338,7 +412,7 @@ export const api = {
       to?: string;
       limit?: number;
       skip?: number;
-    }) => {
+    }): Promise<{ logs: AuditLog[]; pagination: { total: number; limit: number; skip: number } }> => {
       const qs = new URLSearchParams();
       if (params?.action) qs.append('action', params.action);
       if (params?.actorId) qs.append('actorId', params.actorId);
@@ -348,10 +422,11 @@ export const api = {
       if (params?.limit) qs.append('limit', String(params.limit));
       if (params?.skip) qs.append('skip', String(params.skip));
       const query = qs.toString() ? `?${qs.toString()}` : '';
-      return request<{
-        logs: AuditLog[];
-        pagination: { total: number; limit: number; skip: number };
-      }>(`/api/v1/audit${query}`);
+      const res = await request<any>(`/api/v1/audit${query}`);
+      return {
+        logs: Array.isArray(res?.logs) ? res.logs : (Array.isArray(res) ? res : (res?.data?.logs || [])),
+        pagination: res?.pagination || { total: 0, limit: 50, skip: 0 },
+      };
     },
   },
 };

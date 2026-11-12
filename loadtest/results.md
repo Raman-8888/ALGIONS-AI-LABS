@@ -85,3 +85,4 @@ k6 run loadtest/mixed-traffic.js
 2. **Dual-Expiry Read Evaluation**: Expired holds are resolved dynamically at read time (`holdExpiresAt < now => AVAILABLE`) using microsecond CPU clock comparisons in Node, without waiting on MongoDB write locks.
 3. **Compound Unique Indexes**: `(show, seatLabel)` and partial unique index on `Payment { booking, status: 'SUCCESS' }` guarantee hardware-level uniqueness without application-layer spinlocks.
 4. **Isolated Payment Simulation**: Simulating payment gateways takes place strictly **outside** the database transaction boundary. Even when third-party gateways introduce artificial latency, database transaction connection pools are never held hostage.
+

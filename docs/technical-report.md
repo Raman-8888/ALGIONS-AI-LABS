@@ -187,3 +187,4 @@ flowchart TD
 2. **Read-Write Splitting**: Route `GET /movies`, `GET /shows`, and `GET /seats/show/:id` to MongoDB secondary read replicas using `readPreference=secondaryPreferred`.
 3. **Shard Key Strategy**: Shard the `ShowSeat` and `Booking` collections using compound shard key `{ show: 'hashed' }`, evenly distributing auditorium workloads across MongoDB shards.
 4. **Asynchronous Event Pipeline**: Publish `BOOKING_CANCELLED` and `HOLD_EXPIRED_DURING_PAYMENT` events to Kafka or RabbitMQ so automated refund disbursement and notification delivery run asynchronously without blocking API threads.
+

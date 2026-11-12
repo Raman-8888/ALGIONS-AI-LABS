@@ -81,6 +81,7 @@ export class ShowsService {
       if (!theatreMap.has(theatreId)) {
         theatreMap.set(theatreId, {
           theatre: {
+            _id: theatre._id,
             id: theatre._id,
             name: theatre.name,
             city: theatre.city,
@@ -92,7 +93,12 @@ export class ShowsService {
       }
 
       theatreMap.get(theatreId).shows.push({
+        _id: sh._id,
         id: sh._id,
+        screen: {
+          _id: screen._id,
+          name: screen.name,
+        },
         screenName: screen.name,
         startsAt: sh.startsAt,
         endsAt: sh.endsAt,
