@@ -1,0 +1,37 @@
+{
+  "name": "algions-cinema-hall-booking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cinema Hall Ticket Booking System - Algions AI Labs Full-Stack Assessment",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm --workspace=server run dev",
+    "dev:client": "npm --workspace=client run dev",
+    "dev": "npm run dev:server",
+    "build:server": "npm --workspace=server run build",
+    "build:client": "npm --workspace=client run build",
+    "build": "npm run build:server && npm run build:client",
+    "test:server": "npm --workspace=server test",
+    "test:client": "npm --workspace=client test",
+    "test": "npm run test:server",
+    "lint:server": "npm --workspace=server run lint",
+    "lint:client": "npm --workspace=client run lint",
+    "lint": "npm run lint:server && npm run lint:client",
+    "seed": "npm --workspace=server run seed"
+  },
+  "keywords": [
+    "cinema-booking",
+    "mongodb-transactions",
+    "concurrency",
+    "idempotency",
+    "express",
+    "react",
+    "typescript"
+  ],
+  "author": "Algions Assessment Candidate",
+  "license": "ISC"
+}
+
