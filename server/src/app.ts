@@ -14,6 +14,7 @@ import { theatresRouter } from './modules/theatres/theatres.routes.js';
 import { screensRouter } from './modules/screens/screens.routes.js';
 import { showsRouter } from './modules/shows/shows.routes.js';
 import { seatsRouter } from './modules/seats/seats.routes.js';
+import { holdsRouter } from './modules/holds/holds.routes.js';
 
 export const app: Express = express();
 
@@ -72,6 +73,7 @@ app.use(`${config.apiPrefix}/theatres`, theatresRouter);
 app.use(`${config.apiPrefix}/screens`, screensRouter);
 app.use(`${config.apiPrefix}/shows`, showsRouter);
 app.use(`${config.apiPrefix}/seats`, seatsRouter);
+app.use(`${config.apiPrefix}/holds`, holdsRouter);
 
 // 5. Global 404 Handler
 app.use((req: Request, res: Response) => {
