@@ -28,16 +28,35 @@ export class ApiError extends Error {
   }
 }
 
+export function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 async function request<T>(
   url: string,
   options: RequestInit = {},
   headers: Record<string, string> = {}
 ): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
   const mergedHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
     ...headers,
   };
+
+  // Automatically guarantee an Idempotency-Key on mutating operations if not explicitly provided
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    if (!mergedHeaders['Idempotency-Key'] && !mergedHeaders['idempotency-key']) {
+      mergedHeaders['Idempotency-Key'] = generateUUID();
+    }
+  }
 
   const response = await fetch(url, {
     ...options,
@@ -255,7 +274,7 @@ export const api = {
   },
 
   holds: {
-    acquire: (data: { showId: string; seatIds: string[] }, idempotencyKey = crypto.randomUUID()) =>
+    acquire: (data: { showId: string; seatIds: string[] }, idempotencyKey = generateUUID()) =>
       request<{ heldSeats: string[]; holdExpiresAt: string; message: string }>('/api/v1/holds', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -272,7 +291,7 @@ export const api = {
 
   // Bookings & Payments
   bookings: {
-    initiate: (data: { showId: string; seatIds: string[] }, idempotencyKey = crypto.randomUUID()) =>
+    initiate: (data: { showId: string; seatIds: string[] }, idempotencyKey = generateUUID()) =>
       request<{
         booking: Booking;
         paymentToken: string;
@@ -292,7 +311,7 @@ export const api = {
         simulationMode?: 'MOCK_SUCCESS' | 'MOCK_FAIL' | 'MOCK_TIMEOUT';
         gatewayOutcome?: 'MOCK_SUCCESS' | 'MOCK_FAIL' | 'MOCK_TIMEOUT';
       },
-      idempotencyKey = crypto.randomUUID()
+      idempotencyKey = generateUUID()
     ) => {
       const outcome = data.gatewayOutcome || data.simulationMode || 'MOCK_SUCCESS';
       const res = await request<any>('/api/v1/payments/simulate', {
@@ -314,7 +333,7 @@ export const api = {
       };
     },
 
-    confirm: (bookingId: string, paymentId: string, idempotencyKey = crypto.randomUUID()) =>
+    confirm: (bookingId: string, paymentId: string, idempotencyKey = generateUUID()) =>
       request<{
         booking: Booking;
         tickets: Array<{

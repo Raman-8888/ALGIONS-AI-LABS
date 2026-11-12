@@ -166,7 +166,7 @@ export const MyBookings: React.FC = () => {
                           className="inline-flex items-center space-x-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition"
                         >
                           <QrCode className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Seat {t.seatLabel || (t.showSeat as any)?.seatLabel || 'Pass'} (QR)</span>
+                          <span>Seat {t.seatLabel || (t as any).showSeat?.seatLabel || 'Pass'} (QR)</span>
                         </button>
                       ))
                     ) : (

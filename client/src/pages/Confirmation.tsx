@@ -86,29 +86,32 @@ export const Confirmation: React.FC = () => {
 
         {state?.tickets && state.tickets.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {state.tickets.map((ticket, idx) => (
-              <div
-                key={ticket.ticketReference || ticket.reference || ticket.id || idx}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex items-center space-x-4"
-              >
-                {/* QR Code Container */}
-                <div className="bg-white p-2 rounded-xl flex-shrink-0 shadow-inner">
-                  <QRCodeSVG value={ticket.qrPayloadToken || ticket.qrToken || ticket.reference || 'VALID'} size={90} level="M" />
-                </div>
+            {state.tickets.map((ticketItem, idx) => {
+              const ticket = ticketItem as any;
+              return (
+                <div
+                  key={ticket.ticketReference || ticket.reference || ticket.id || idx}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex items-center space-x-4"
+                >
+                  {/* QR Code Container */}
+                  <div className="bg-white p-2 rounded-xl flex-shrink-0 shadow-inner">
+                    <QRCodeSVG value={ticket.qrPayloadToken || ticket.qrToken || ticket.reference || 'VALID'} size={90} level="M" />
+                  </div>
 
-                {/* Ticket Details */}
-                <div className="flex-grow">
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                    Ticket Pass
-                  </div>
-                  <div className="text-lg font-extrabold text-white">Seat {ticket.seatLabel || `Pass #${idx + 1}`}</div>
-                  <div className="text-xs text-indigo-400 font-medium">{ticket.category || 'Standard'}</div>
-                  <div className="text-[11px] font-mono text-slate-400 mt-2 truncate">
-                    {ticket.ticketReference || ticket.reference || ticket.id}
+                  {/* Ticket Details */}
+                  <div className="flex-grow">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                      Ticket Pass
+                    </div>
+                    <div className="text-lg font-extrabold text-white">Seat {ticket.seatLabel || `Pass #${idx + 1}`}</div>
+                    <div className="text-xs text-indigo-400 font-medium">{ticket.category || 'Standard'}</div>
+                    <div className="text-[11px] font-mono text-slate-400 mt-2 truncate">
+                      {ticket.ticketReference || ticket.reference || ticket.id}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-6 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-400">
