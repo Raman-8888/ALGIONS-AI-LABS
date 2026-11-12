@@ -7,6 +7,9 @@ import { createScreenSchema, updateScreenSchema } from './screens.validation.js'
 
 export const screensRouter: Router = Router();
 
+// Public: list screens (optionally by theatreId)
+screensRouter.get('/', ScreensController.list);
+
 // Public: view screen layout
 screensRouter.get('/:id', ScreensController.getById);
 

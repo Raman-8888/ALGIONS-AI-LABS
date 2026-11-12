@@ -6,6 +6,14 @@ import { logAudit } from '../../common/audit/auditLogger.js';
 import { CreateScreenInput, UpdateScreenInput } from './screens.validation.js';
 
 export class ScreensService {
+  static async listScreens(theatreId?: string) {
+    const filter: Record<string, any> = { isActive: true };
+    if (theatreId) {
+      filter.theatre = theatreId;
+    }
+    return Screen.find(filter).lean({ virtuals: true });
+  }
+
   static async getScreenById(id: string) {
     const screen = await Screen.findById(id).lean({ virtuals: true });
     if (!screen) {

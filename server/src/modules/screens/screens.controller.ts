@@ -2,6 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import { ScreensService } from './screens.service.js';
 
 export class ScreensController {
+  static async list(req: Request, res: Response, next: NextFunction) {
+    try {
+      const theatreId = req.query.theatreId as string | undefined;
+      const screens = await ScreensService.listScreens(theatreId);
+      res.status(200).json({ data: { screens } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const screen = await ScreensService.getScreenById(req.params.id);

@@ -1,0 +1,90 @@
+{
+  "executionTime": "2026-11-12T19:31:18.924Z",
+  "baseUrl": "http://localhost:5173",
+  "totalRoutesTested": 9,
+  "totalIssuesFound": 0,
+  "routeReports": [
+    {
+      "route": "/ (Browse Movies)",
+      "actionsTriggered": 800,
+      "attackResult": {
+        "success": true,
+        "count": 800
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/login (Auth Flow)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/movie/6af60a4790facc8693c168e1 (Movie Details)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/my-bookings (Booking History & Tickets)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/staff/scanner (Ticket QR Scanner)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/admin/dashboard (Occupancy & Sales)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/admin/shows (Shows Scheduler)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/admin/theatres (Multiplex Layouts)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    },
+    {
+      "route": "/admin/audit (Security Audit Trail)",
+      "actionsTriggered": 600,
+      "attackResult": {
+        "success": true,
+        "count": 600
+      },
+      "hasReactCrash": false
+    }
+  ],
+  "issues": []
+}
