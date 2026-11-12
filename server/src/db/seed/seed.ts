@@ -246,23 +246,17 @@ export async function runSeed(dropExisting = true) {
   const showDocs = [];
   const screensList = [screen1, screen2, screen3];
 
-  // Generate shows over the next 7 days
+  // Generate shows over the next 7 days, always starting from now + 2 hours
   for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
     for (let screenIndex = 0; screenIndex < screensList.length; screenIndex++) {
       const scr = screensList[screenIndex];
       const selectedMovie = movies[(dayOffset + screenIndex) % movies.length];
 
-      // Schedule 2 shows per screen per day (2:00 PM and 6:30 PM)
-      const slotTimes = [
-        { hour: 14, minute: 0 },
-        { hour: 18, minute: 30 },
-      ];
+      // Schedule 2 shows per screen per day guaranteed to be in the future
+      const hourOffsets = [2 + dayOffset * 24 + screenIndex * 2, 7 + dayOffset * 24 + screenIndex * 2];
 
-      for (const slot of slotTimes) {
-        const startsAt = new Date(now);
-        startsAt.setDate(now.getDate() + dayOffset);
-        startsAt.setHours(slot.hour, slot.minute, 0, 0);
-
+      for (const hOffset of hourOffsets) {
+        const startsAt = new Date(now.getTime() + hOffset * 3600 * 1000);
         const endsAt = new Date(
           startsAt.getTime() + (selectedMovie.durationMinutes + cleaningBufferMinutes) * 60000,
         );

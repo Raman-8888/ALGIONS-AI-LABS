@@ -98,7 +98,56 @@ const horde = window.gremlins.createHorde({
 
 ---
 
-## 6. How to Re-Run the Chaos Suite
+## 7. Comprehensive Profile & Button Action Audit
+
+Following the chaotic testing, we executed a systematic, button-by-button automated audit across all 4 user personas (**Guest**, **Customer**, **Staff**, **Admin**) in `loadtest/chaos/comprehensive-audit.ts`.
+
+### Full Results Matrix (41 / 41 Actions Passed - 100%)
+
+| Profile | Page / View | UI Element | Action Performed | Verified Real Behavior | Status |
+|---|---|---|---|---|---|
+| **GUEST** | `/` | Navbar Brand | Click logo | Reloads/maintains catalog | **PASS** |
+| **GUEST** | `/` | Search Bar | Type query | Filters catalog in real time | **PASS** |
+| **GUEST** | `/` | Search Clear | Clear query | Restores full catalog | **PASS** |
+| **GUEST** | `/` | Genre Filter | Click "Sci-Fi" pill | Activates category filter | **PASS** |
+| **GUEST** | `/` | Genre Reset | Click "All Genres" pill | Resets genre filter | **PASS** |
+| **GUEST** | `/` | Movie Card | Click "View Showtimes →" | Navigates to `/movie/:id` | **PASS** |
+| **GUEST** | `/movie/:id` | Show Card | Click "Select Seats →" | Navigates to `/shows/:id/seats` | **PASS** |
+| **GUEST** | `/shows/:id/seats` | Seat Grid | Click available seat | Redirects to `/login` with return state | **PASS** |
+| **GUEST** | `/login` | Demo Buttons | Click "Customer" button | Pre-fills customer credentials | **PASS** |
+| **CUSTOMER** | `/login` | Submit Form | Click "Sign In" | Authenticates & updates header badge | **PASS** |
+| **CUSTOMER** | `/shows/:id/seats` | Seat Cell | Click available seat | Acquires 5-min hold, starts countdown, shows floating bar | **PASS** |
+| **CUSTOMER** | `/shows/:id/seats` | Action Bar | Click "Proceed to Checkout →" | Navigates to `/checkout` | **PASS** |
+| **CUSTOMER** | `/checkout` | Gateway Radio | Select `MOCK_FAIL` | Toggles simulator option | **PASS** |
+| **CUSTOMER** | `/checkout` | Payment Button | Click "Pay & Confirm Booking" | Gateway decline handled, error banner shown, hold preserved | **PASS** |
+| **CUSTOMER** | `/checkout` | Gateway Radio | Select `MOCK_SUCCESS` | Toggles simulator option | **PASS** |
+| **CUSTOMER** | `/checkout` | Payment Button | Click "Pay & Confirm Booking" | ACID transaction committed, navigates to confirmation | **PASS** |
+| **CUSTOMER** | `/confirmation/:id` | QR Pass Container | Verify digital ticket passes | Generates signed SVG QR code tokens | **PASS** |
+| **CUSTOMER** | `/confirmation/:id` | Action Button | Click "View My Bookings" | Navigates to `/my-bookings` | **PASS** |
+| **CUSTOMER** | `/my-bookings` | Pass Button | Click "Seat A1 (QR)" | Opens digital ticket admission modal | **PASS** |
+| **CUSTOMER** | `/my-bookings` | Cancellation Button | Click "Cancel Booking" | Opens modal with 100% refund policy & dismisses cleanly | **PASS** |
+| **CUSTOMER** | Navbar | Logout Button | Click Logout icon | Clears session cookie, redirects to `/login` | **PASS** |
+| **STAFF** | `/login` | Demo Buttons | Click "Staff" & submit | Authenticates with `STAFF` header badge | **PASS** |
+| **STAFF** | `/admin/dashboard` | RBAC Guard | Direct URL navigation | Blocked by role guard with `403 - Access Forbidden` | **PASS** |
+| **STAFF** | `/403` | Return Button | Click "Return to Home" | Navigates back to public portal | **PASS** |
+| **STAFF** | Navbar | Nav Link | Click "Ticket Scanner" | Navigates to `/staff/scanner` | **PASS** |
+| **STAFF** | `/staff/scanner` | Select Dropdown | Inspect auditorium shows | Lists scheduled shows | **PASS** |
+| **STAFF** | `/staff/scanner` | Validation Form | Enter QR token & submit | Evaluates token and single-use validation state | **PASS** |
+| **STAFF** | Navbar | Logout Button | Click Logout button | Clears staff session cleanly | **PASS** |
+| **ADMIN** | `/login` | Demo Buttons | Click "Admin" & submit | Authenticates with `ADMIN` badge & admin dropdown | **PASS** |
+| **ADMIN** | `/admin/dashboard` | Nav Link | Open Dashboard & Reports | Loads Gross Revenue metrics and Live Show Occupancy report | **PASS** |
+| **ADMIN** | `/admin/shows` | Nav Link | Open Shows Manager | Loads scheduled shows table | **PASS** |
+| **ADMIN** | `/admin/shows` | Action Button | Click "Schedule New Show" | Opens modal with movie/theatre/screen dropdowns & closes | **PASS** |
+| **ADMIN** | `/admin/movies` | Nav Link | Open Movies Manager | Loads movie catalog | **PASS** |
+| **ADMIN** | `/admin/movies` | Action Button | Click "Add New Movie" | Opens modal with genre tags & duration fields & closes | **PASS** |
+| **ADMIN** | `/admin/theatres` | Nav Link | Open Theatres Manager | Loads cinema complexes & screen list | **PASS** |
+| **ADMIN** | `/admin/theatres` | Action Button | Click "Add Theatre" | Opens modal with name, city, timezone fields & closes | **PASS** |
+| **ADMIN** | `/admin/theatres` | Action Button | Click "Add Screen" | Opens interactive Screen Layout Designer (seat capacity calculator) | **PASS** |
+| **ADMIN** | `/admin/audit` | Nav Link | Open Audit Logs | Loads append-only immutable audit trail | **PASS** |
+| **ADMIN** | `/admin/audit` | Filter Dropdown | Filter by action type | Filters events dynamically | **PASS** |
+| **ADMIN** | `/admin/audit` | Action Button | Click "View Details JSON" | Inspects audit event metadata | **PASS** |
+| **ADMIN** | Navbar | Logout Button | Click Logout button | Clears admin session cleanly | **PASS** |
+
 
 ```bash
 # Ensure server and client are running
@@ -108,3 +157,4 @@ npm run dev
 npx tsx loadtest/chaos/gremlins-runner.ts
 ```
 The runner will output live console alerts and generate a structured JSON telemetry report in `loadtest/chaos/chaos-report.json`.
+

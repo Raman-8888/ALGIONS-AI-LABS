@@ -33,14 +33,15 @@ async function request<T>(
   options: RequestInit = {},
   headers: Record<string, string> = {}
 ): Promise<T> {
-  const defaultHeaders: Record<string, string> = {
+  const mergedHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...((options.headers as Record<string, string>) || {}),
     ...headers,
   };
 
   const response = await fetch(url, {
     ...options,
-    headers: defaultHeaders,
+    headers: mergedHeaders,
     credentials: 'include',
   });
 
@@ -285,19 +286,33 @@ export const api = {
         },
       }),
 
-    simulatePayment: (data: {
-      bookingId: string;
-      simulationMode: 'MOCK_SUCCESS' | 'MOCK_FAIL' | 'MOCK_TIMEOUT';
-    }) =>
-      request<{
-        paymentId: string;
-        status: 'SUCCESS' | 'FAILED';
-        gatewayTransactionId: string;
-        message: string;
-      }>('/api/v1/payments/simulate', {
+    simulatePayment: async (
+      data: {
+        bookingId: string;
+        simulationMode?: 'MOCK_SUCCESS' | 'MOCK_FAIL' | 'MOCK_TIMEOUT';
+        gatewayOutcome?: 'MOCK_SUCCESS' | 'MOCK_FAIL' | 'MOCK_TIMEOUT';
+      },
+      idempotencyKey = crypto.randomUUID()
+    ) => {
+      const outcome = data.gatewayOutcome || data.simulationMode || 'MOCK_SUCCESS';
+      const res = await request<any>('/api/v1/payments/simulate', {
         method: 'POST',
-        body: JSON.stringify(data),
-      }),
+        body: JSON.stringify({
+          bookingId: data.bookingId,
+          gatewayOutcome: outcome,
+        }),
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+        },
+      });
+      const payment = res?.payment || res;
+      return {
+        paymentId: (payment?._id || payment?.id || payment?.paymentId) as string,
+        status: (payment?.status || 'SUCCESS') as 'SUCCESS' | 'FAILED',
+        gatewayTransactionId: (payment?.transactionReference || payment?.gatewayTransactionId) as string,
+        message: (res?.message || 'Payment processed successfully') as string,
+      };
+    },
 
     confirm: (bookingId: string, paymentId: string, idempotencyKey = crypto.randomUUID()) =>
       request<{

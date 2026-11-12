@@ -64,12 +64,21 @@ export const Checkout: React.FC = () => {
       // 1. Initiate booking (or reuse pending booking if retrying)
       let bookingId = pendingBookingId;
       if (!bookingId) {
-        const initiateRes = await api.bookings.initiate({
+        const initiateRes: any = await api.bookings.initiate({
           showId: showId!,
           seatIds,
         });
-        bookingId = initiateRes.booking._id;
+        bookingId =
+          initiateRes.bookingId ||
+          initiateRes.booking?._id ||
+          initiateRes.booking?.id ||
+          initiateRes.id ||
+          initiateRes._id;
         setPendingBookingId(bookingId);
+      }
+
+      if (!bookingId) {
+        throw new Error('Failed to initiate booking session. Please retry.');
       }
 
       // 2. Simulate Payment outside DB transaction

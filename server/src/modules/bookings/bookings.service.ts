@@ -313,7 +313,9 @@ export class BookingsService {
 
     // Attach tickets for confirmed bookings
     const bookingIds = bookings.map((b) => b._id);
-    const tickets = await Ticket.find({ booking: { $in: bookingIds } }).lean();
+    const tickets = await Ticket.find({ booking: { $in: bookingIds } })
+      .populate('showSeat', 'seatLabel category priceInPaise')
+      .lean();
 
     const ticketsByBooking = new Map<string, any[]>();
     for (const t of tickets) {
@@ -321,7 +323,11 @@ export class BookingsService {
       if (!ticketsByBooking.has(bId)) {
         ticketsByBooking.set(bId, []);
       }
-      ticketsByBooking.get(bId)!.push(t);
+      ticketsByBooking.get(bId)!.push({
+        ...t,
+        seatLabel: (t.showSeat as any)?.seatLabel || 'Admission',
+        category: (t.showSeat as any)?.category,
+      });
     }
 
     const enriched = bookings.map((b) => ({
