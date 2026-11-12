@@ -45,34 +45,56 @@ export async function runSeed(dropExisting = true) {
   // 1. Seed Users
   console.log('[Seed] Creating demo users...');
   const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash('Password123!', salt);
+  const passwordHash1 = await bcrypt.hash('Password123!', salt);
+  const passwordHash2 = await bcrypt.hash('Password@123', salt);
 
   const users = await User.create([
     {
       email: 'admin@algions.com',
-      passwordHash,
+      passwordHash: passwordHash1,
       name: 'System Admin',
       role: 'ADMIN',
       isActive: true,
     },
     {
       email: 'staff@algions.com',
-      passwordHash,
+      passwordHash: passwordHash1,
       name: 'Staff Scanner',
       role: 'STAFF',
       isActive: true,
     },
     {
       email: 'customer1@algions.com',
-      passwordHash,
+      passwordHash: passwordHash1,
       name: 'Rohan Sharma',
       role: 'CUSTOMER',
       isActive: true,
     },
     {
       email: 'customer2@algions.com',
-      passwordHash,
+      passwordHash: passwordHash1,
       name: 'Priya Patel',
+      role: 'CUSTOMER',
+      isActive: true,
+    },
+    {
+      email: 'admin@cinema.com',
+      passwordHash: passwordHash2,
+      name: 'Cinema Admin',
+      role: 'ADMIN',
+      isActive: true,
+    },
+    {
+      email: 'staff@cinema.com',
+      passwordHash: passwordHash2,
+      name: 'Cinema Staff',
+      role: 'STAFF',
+      isActive: true,
+    },
+    {
+      email: 'customer@cinema.com',
+      passwordHash: passwordHash2,
+      name: 'Cinema Customer',
       role: 'CUSTOMER',
       isActive: true,
     },
